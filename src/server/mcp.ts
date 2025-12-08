@@ -157,6 +157,7 @@ export class McpServer {
                                         : EMPTY_OBJECT_JSON_SCHEMA;
                                 })(),
                                 annotations: tool.annotations,
+                                securitySchemes: tool.securitySchemes,
                                 execution: tool.execution,
                                 _meta: tool._meta
                             };
