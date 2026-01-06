@@ -1,6 +1,6 @@
 ## Server overview
 
-This SDK lets you build MCP servers in TypeScript and connect them to different transports. For most use cases you will use `McpServer` from `@modelcontextprotocol/server` and choose one of:
+This SDK lets you build MCP servers in TypeScript and connect them to different transports. For most use cases you will use `McpServer` from `@modelcontextprotocol/sdk/server/mcp.js` and choose one of:
 
 - **Streamable HTTP** (recommended for remote servers)
 - **HTTP + SSE** (deprecated, for backwards compatibility only)
@@ -8,11 +8,11 @@ This SDK lets you build MCP servers in TypeScript and connect them to different 
 
 For a complete, runnable example server, see:
 
-- [`simpleStreamableHttp.ts`](../examples/server/src/simpleStreamableHttp.ts) – feature‑rich Streamable HTTP server
-- [`jsonResponseStreamableHttp.ts`](../examples/server/src/jsonResponseStreamableHttp.ts) – Streamable HTTP with JSON response mode
-- [`simpleStatelessStreamableHttp.ts`](../examples/server/src/simpleStatelessStreamableHttp.ts) – stateless Streamable HTTP server
-- [`simpleSseServer.ts`](../examples/server/src/simpleSseServer.ts) – deprecated HTTP+SSE transport
-- [`sseAndStreamableHttpCompatibleServer.ts`](../examples/server/src/sseAndStreamableHttpCompatibleServer.ts) – backwards‑compatible server for old and new clients
+- [`simpleStreamableHttp.ts`](../src/examples/server/simpleStreamableHttp.ts) – feature‑rich Streamable HTTP server
+- [`jsonResponseStreamableHttp.ts`](../src/examples/server/jsonResponseStreamableHttp.ts) – Streamable HTTP with JSON response mode
+- [`simpleStatelessStreamableHttp.ts`](../src/examples/server/simpleStatelessStreamableHttp.ts) – stateless Streamable HTTP server
+- [`simpleSseServer.ts`](../src/examples/server/simpleSseServer.ts) – deprecated HTTP+SSE transport
+- [`sseAndStreamableHttpCompatibleServer.ts`](../src/examples/server/sseAndStreamableHttpCompatibleServer.ts) – backwards‑compatible server for old and new clients
 
 ## Transports
 
@@ -27,11 +27,12 @@ Streamable HTTP is the modern, fully featured transport. It supports:
 
 Key examples:
 
-- [`simpleStreamableHttp.ts`](../examples/server/src/simpleStreamableHttp.ts) – sessions, logging, tasks, elicitation, auth hooks
-- [`jsonResponseStreamableHttp.ts`](../examples/server/src/jsonResponseStreamableHttp.ts) – `enableJsonResponse: true`, no SSE
-- [`standaloneSseWithGetStreamableHttp.ts`](../examples/server/src/standaloneSseWithGetStreamableHttp.ts) – notifications with Streamable HTTP GET + SSE
+- [`simpleStreamableHttp.ts`](../src/examples/server/simpleStreamableHttp.ts) – sessions, logging, tasks, elicitation, auth hooks
+- [`jsonResponseStreamableHttp.ts`](../src/examples/server/jsonResponseStreamableHttp.ts) – `enableJsonResponse: true`, no SSE
+- [`standaloneSseWithGetStreamableHttp.ts`](../src/examples/server/standaloneSseWithGetStreamableHttp.ts) – notifications with Streamable HTTP GET + SSE
 
-See the MCP spec for full transport details: `https://modelcontextprotocol.io/specification/2025-11-25/basic/transports`
+See the MCP spec for full transport details:  
+`https://modelcontextprotocol.io/specification/2025-03-26/basic/transports`
 
 ### Stateless vs stateful sessions
 
@@ -42,8 +43,8 @@ Streamable HTTP can run:
 
 Examples:
 
-- Stateless Streamable HTTP: [`simpleStatelessStreamableHttp.ts`](../examples/server/src/simpleStatelessStreamableHttp.ts)
-- Stateful with resumability: [`simpleStreamableHttp.ts`](../examples/server/src/simpleStreamableHttp.ts)
+- Stateless Streamable HTTP: [`simpleStatelessStreamableHttp.ts`](../src/examples/server/simpleStatelessStreamableHttp.ts)
+- Stateful with resumability: [`simpleStreamableHttp.ts`](../src/examples/server/simpleStreamableHttp.ts)
 
 ### Deprecated HTTP + SSE
 
@@ -51,15 +52,15 @@ The older HTTP+SSE transport (protocol version 2024‑11‑05) is supported only
 
 Examples:
 
-- Legacy SSE server: [`simpleSseServer.ts`](../examples/server/src/simpleSseServer.ts)
+- Legacy SSE server: [`simpleSseServer.ts`](../src/examples/server/simpleSseServer.ts)
 - Backwards‑compatible server (Streamable HTTP + SSE):  
-  [`sseAndStreamableHttpCompatibleServer.ts`](../examples/server/src/sseAndStreamableHttpCompatibleServer.ts)
+  [`sseAndStreamableHttpCompatibleServer.ts`](../src/examples/server/sseAndStreamableHttpCompatibleServer.ts)
 
 ## Running your server
 
 For a minimal “getting started” experience:
 
-1. Start from [`simpleStreamableHttp.ts`](../examples/server/src/simpleStreamableHttp.ts).
+1. Start from [`simpleStreamableHttp.ts`](../src/examples/server/simpleStreamableHttp.ts).
 2. Remove features you do not need (tasks, advanced logging, OAuth, etc.).
 3. Register your own tools, resources and prompts.
 
@@ -70,7 +71,7 @@ For more detailed patterns (stateless vs stateful, JSON response mode, CORS, DNS
 MCP servers running on localhost are vulnerable to DNS rebinding attacks. Use `createMcpExpressApp()` to create an Express app with DNS rebinding protection enabled by default:
 
 ```typescript
-import { createMcpExpressApp } from '@modelcontextprotocol/server';
+import { createMcpExpressApp } from '@modelcontextprotocol/sdk/server/express.js';
 
 // Protection auto-enabled (default host is 127.0.0.1)
 const app = createMcpExpressApp();
@@ -78,19 +79,19 @@ const app = createMcpExpressApp();
 // Protection auto-enabled for localhost
 const app = createMcpExpressApp({ host: 'localhost' });
 
-// No auto protection when binding to all interfaces, unless you provide allowedHosts
+// No auto protection when binding to all interfaces
 const app = createMcpExpressApp({ host: '0.0.0.0' });
 ```
 
-When binding to `0.0.0.0` / `::`, provide an allow-list of hosts:
+For custom host validation, use the middleware directly:
 
 ```typescript
-import { createMcpExpressApp } from '@modelcontextprotocol/server';
+import express from 'express';
+import { hostHeaderValidation } from '@modelcontextprotocol/sdk/server/middleware/hostHeaderValidation.js';
 
-const app = createMcpExpressApp({
-    host: '0.0.0.0',
-    allowedHosts: ['localhost', '127.0.0.1', 'myhost.local']
-});
+const app = express();
+app.use(express.json());
+app.use(hostHeaderValidation(['localhost', '127.0.0.1', 'myhost.local']));
 ```
 
 ## Tools, resources, and prompts
@@ -125,14 +126,14 @@ server.registerTool(
 
 This snippet is illustrative only; for runnable servers that expose tools, see:
 
-- [`simpleStreamableHttp.ts`](../examples/server/src/simpleStreamableHttp.ts)
-- [`toolWithSampleServer.ts`](../examples/server/src/toolWithSampleServer.ts)
+- [`simpleStreamableHttp.ts`](../src/examples/server/simpleStreamableHttp.ts)
+- [`toolWithSampleServer.ts`](../src/examples/server/toolWithSampleServer.ts)
 
 #### ResourceLink outputs
 
 Tools can return `resource_link` content items to reference large resources without embedding them directly, allowing clients to fetch only what they need.
 
-The README’s `list-files` example shows the pattern conceptually; for concrete usage, see the Streamable HTTP examples in `examples/server/src`.
+The README’s `list-files` example shows the pattern conceptually; for concrete usage, see the Streamable HTTP examples in `src/examples/server`.
 
 ### Resources
 
@@ -157,7 +158,7 @@ server.registerResource(
 
 Dynamic resources use `ResourceTemplate` and can support completions on path parameters. For full runnable examples of resources:
 
-- [`simpleStreamableHttp.ts`](../examples/server/src/simpleStreamableHttp.ts)
+- [`simpleStreamableHttp.ts`](../src/examples/server/simpleStreamableHttp.ts)
 
 ### Prompts
 
@@ -189,33 +190,37 @@ server.registerPrompt(
 
 For prompts integrated into a full server, see:
 
-- [`simpleStreamableHttp.ts`](../examples/server/src/simpleStreamableHttp.ts)
+- [`simpleStreamableHttp.ts`](../src/examples/server/simpleStreamableHttp.ts)
 
 ### Completions
 
 Both prompts and resources can support argument completions. On the client side, you use `client.complete()` with a reference to the prompt or resource and the partially‑typed argument.
 
-See the MCP spec sections on prompts and resources for complete details, and [`simpleStreamableHttp.ts`](../examples/client/src/simpleStreamableHttp.ts) for client‑side usage patterns.
+See the MCP spec sections on prompts and resources for complete details, and [`simpleStreamableHttp.ts`](../src/examples/client/simpleStreamableHttp.ts) for client‑side usage patterns.
 
 ### Display names and metadata
 
 Tools, resources and prompts support a `title` field for human‑readable names. Older APIs can also attach `annotations.title`. To compute the correct display name on the client, use:
 
-- `getDisplayName` from `@modelcontextprotocol/client`
+- `getDisplayName` from `@modelcontextprotocol/sdk/shared/metadataUtils.js`
 
 ## Multi‑node deployment patterns
 
-The SDK supports multi‑node deployments using Streamable HTTP. The high‑level patterns and diagrams live with the runnable server examples:
+The SDK supports multi‑node deployments using Streamable HTTP. The high‑level patterns are documented in [`README.md`](../src/examples/README.md):
 
-- [`examples/server/README.md`](../examples/server/README.md#multi-node-deployment-patterns)
+- Stateless mode (any node can handle any request)
+- Persistent storage mode (shared database for session state)
+- Local state with message routing (message queue + pub/sub)
+
+Those deployment diagrams are kept in [`README.md`](../src/examples/README.md) so the examples and documentation stay aligned.
 
 ## Backwards compatibility
 
 To handle both modern and legacy clients:
 
 - Run a backwards‑compatible server:
-    - [`sseAndStreamableHttpCompatibleServer.ts`](../examples/server/src/sseAndStreamableHttpCompatibleServer.ts)
+    - [`sseAndStreamableHttpCompatibleServer.ts`](../src/examples/server/sseAndStreamableHttpCompatibleServer.ts)
 - Use a client that falls back from Streamable HTTP to SSE:
-    - [`streamableHttpWithSseFallbackClient.ts`](../examples/client/src/streamableHttpWithSseFallbackClient.ts)
+    - [`streamableHttpWithSseFallbackClient.ts`](../src/examples/client/streamableHttpWithSseFallbackClient.ts)
 
 For the detailed protocol rules, see the “Backwards compatibility” section of the MCP spec.
