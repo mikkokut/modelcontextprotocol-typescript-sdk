@@ -44,6 +44,7 @@ import {
     ServerRequest,
     ServerNotification,
     ToolAnnotations,
+    SecurityScheme,
     LoggingMessageNotification,
     CreateTaskResult,
     Result,
@@ -137,41 +138,44 @@ export class McpServer {
 
         this.server.setRequestHandler(
             ListToolsRequestSchema,
-            (): ListToolsResult => ({
-                tools: Object.entries(this._registeredTools)
-                    .filter(([, tool]) => tool.enabled)
-                    .map(([name, tool]): Tool => {
-                        const toolDefinition: Tool = {
-                            name,
-                            title: tool.title,
-                            description: tool.description,
-                            inputSchema: (() => {
-                                const obj = normalizeObjectSchema(tool.inputSchema);
-                                return obj
-                                    ? (toJsonSchemaCompat(obj, {
-                                          strictUnions: true,
-                                          pipeStrategy: 'input'
-                                      }) as Tool['inputSchema'])
-                                    : EMPTY_OBJECT_JSON_SCHEMA;
-                            })(),
-                            annotations: tool.annotations,
-                            execution: tool.execution,
-                            _meta: tool._meta
-                        };
+            (): ListToolsResult => {
+                return {
+                    tools: Object.entries(this._registeredTools)
+                        .filter(([, tool]) => tool.enabled)
+                        .map(([name, tool]): Tool => {
+                            const toolDefinition: Tool = {
+                                name,
+                                title: tool.title,
+                                description: tool.description,
+                                inputSchema: (() => {
+                                    const obj = normalizeObjectSchema(tool.inputSchema);
+                                    return obj
+                                        ? (toJsonSchemaCompat(obj, {
+                                            strictUnions: true,
+                                            pipeStrategy: 'input'
+                                        }) as Tool['inputSchema'])
+                                        : EMPTY_OBJECT_JSON_SCHEMA;
+                                })(),
+                                annotations: tool.annotations,
+                                securitySchemes: tool.securitySchemes,
+                                execution: tool.execution,
+                                _meta: tool._meta
+                            };
 
-                        if (tool.outputSchema) {
-                            const obj = normalizeObjectSchema(tool.outputSchema);
-                            if (obj) {
-                                toolDefinition.outputSchema = toJsonSchemaCompat(obj, {
-                                    strictUnions: true,
-                                    pipeStrategy: 'output'
-                                }) as Tool['outputSchema'];
+                            if (tool.outputSchema) {
+                                const obj = normalizeObjectSchema(tool.outputSchema);
+                                if (obj) {
+                                    toolDefinition.outputSchema = toJsonSchemaCompat(obj, {
+                                        strictUnions: true,
+                                        pipeStrategy: 'output'
+                                    }) as Tool['outputSchema'];
+                                }
                             }
-                        }
 
-                        return toolDefinition;
-                    })
-            })
+                            return toolDefinition;
+                        })
+                };
+            }
         );
 
         this.server.setRequestHandler(CallToolRequestSchema, async (request, extra): Promise<CallToolResult | CreateTaskResult> => {
@@ -258,10 +262,10 @@ export class McpServer {
     private async validateToolInput<
         Tool extends RegisteredTool,
         Args extends Tool['inputSchema'] extends infer InputSchema
-            ? InputSchema extends AnySchema
-                ? SchemaOutput<InputSchema>
-                : undefined
-            : undefined
+        ? InputSchema extends AnySchema
+        ? SchemaOutput<InputSchema>
+        : undefined
+        : undefined
     >(tool: Tool, args: Args, toolName: string): Promise<Args> {
         if (!tool.inputSchema) {
             return undefined as Args;
@@ -377,7 +381,7 @@ export class McpServer {
         const createTaskResult: CreateTaskResult = args // undefined only if tool.inputSchema is undefined
             ? await Promise.resolve((handler as ToolTaskHandler<ZodRawShapeCompat>).createTask(args, taskExtra))
             : // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              await Promise.resolve(((handler as ToolTaskHandler<undefined>).createTask as any)(taskExtra));
+            await Promise.resolve(((handler as ToolTaskHandler<undefined>).createTask as any)(taskExtra));
 
         // Poll until completion
         const taskId = createTaskResult.task.taskId;
@@ -875,6 +879,7 @@ export class McpServer {
         inputSchema: ZodRawShapeCompat | AnySchema | undefined,
         outputSchema: ZodRawShapeCompat | AnySchema | undefined,
         annotations: ToolAnnotations | undefined,
+        securitySchemes: SecurityScheme[] | undefined,
         execution: ToolExecution | undefined,
         _meta: Record<string, unknown> | undefined,
         handler: AnyToolHandler<ZodRawShapeCompat | undefined>
@@ -888,6 +893,7 @@ export class McpServer {
             inputSchema: getZodSchemaObject(inputSchema),
             outputSchema: getZodSchemaObject(outputSchema),
             annotations,
+            securitySchemes,
             execution,
             _meta,
             handler: handler,
@@ -909,6 +915,7 @@ export class McpServer {
                 if (typeof updates.outputSchema !== 'undefined') registeredTool.outputSchema = objectFromShape(updates.outputSchema);
                 if (typeof updates.callback !== 'undefined') registeredTool.handler = updates.callback;
                 if (typeof updates.annotations !== 'undefined') registeredTool.annotations = updates.annotations;
+                if (typeof updates.securitySchemes !== 'undefined') registeredTool.securitySchemes = updates.securitySchemes;
                 if (typeof updates._meta !== 'undefined') registeredTool._meta = updates._meta;
                 if (typeof updates.enabled !== 'undefined') registeredTool.enabled = updates.enabled;
                 this.sendToolListChanged();
@@ -1039,6 +1046,7 @@ export class McpServer {
             inputSchema,
             outputSchema,
             annotations,
+            undefined,
             { taskSupport: 'forbidden' },
             undefined,
             callback
@@ -1056,6 +1064,7 @@ export class McpServer {
             inputSchema?: InputArgs;
             outputSchema?: OutputArgs;
             annotations?: ToolAnnotations;
+            securitySchemes?: SecurityScheme[];
             _meta?: Record<string, unknown>;
         },
         cb: ToolCallback<InputArgs>
@@ -1064,7 +1073,7 @@ export class McpServer {
             throw new Error(`Tool ${name} is already registered`);
         }
 
-        const { title, description, inputSchema, outputSchema, annotations, _meta } = config;
+        const { title, description, inputSchema, outputSchema, annotations, securitySchemes, _meta } = config;
 
         return this._createRegisteredTool(
             name,
@@ -1073,6 +1082,7 @@ export class McpServer {
             inputSchema,
             outputSchema,
             annotations,
+            securitySchemes,
             { taskSupport: 'forbidden' },
             _meta,
             cb as ToolCallback<ZodRawShapeCompat | undefined>
@@ -1275,8 +1285,8 @@ export type BaseToolCallback<
 > = Args extends ZodRawShapeCompat
     ? (args: ShapeOutput<Args>, extra: Extra) => SendResultT | Promise<SendResultT>
     : Args extends AnySchema
-      ? (args: SchemaOutput<Args>, extra: Extra) => SendResultT | Promise<SendResultT>
-      : (extra: Extra) => SendResultT | Promise<SendResultT>;
+    ? (args: SchemaOutput<Args>, extra: Extra) => SendResultT | Promise<SendResultT>
+    : (extra: Extra) => SendResultT | Promise<SendResultT>;
 
 /**
  * Callback for a tool handler registered with Server.tool().
@@ -1305,6 +1315,7 @@ export type RegisteredTool = {
     inputSchema?: AnySchema;
     outputSchema?: AnySchema;
     annotations?: ToolAnnotations;
+    securitySchemes?: SecurityScheme[];
     execution?: ToolExecution;
     _meta?: Record<string, unknown>;
     handler: AnyToolHandler<undefined | ZodRawShapeCompat>;
@@ -1318,6 +1329,7 @@ export type RegisteredTool = {
         paramsSchema?: InputArgs;
         outputSchema?: OutputArgs;
         annotations?: ToolAnnotations;
+        securitySchemes?: SecurityScheme[];
         _meta?: Record<string, unknown>;
         callback?: ToolCallback<InputArgs>;
         enabled?: boolean;

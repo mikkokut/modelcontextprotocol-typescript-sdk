@@ -50,7 +50,7 @@ npx tsx src/examples/client/simpleClientCredentials.ts
 
 ### Backwards Compatible Client
 
-A client that implements backwards compatibility according to the [MCP specification](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports#backwards-compatibility), allowing it to work with both new and legacy servers. This client demonstrates:
+A client that implements backwards compatibility according to the [MCP specification](https://modelcontextprotocol.io/specification/2025-03-26/basic/transports#backwards-compatibility), allowing it to work with both new and legacy servers. This client demonstrates:
 
 - The client first POSTs an initialize request to the server URL:
     - If successful, it uses the Streamable HTTP transport
@@ -83,7 +83,7 @@ These examples demonstrate how to set up an MCP server on a single node with dif
 
 ##### Simple Streamable HTTP Server
 
-A server that implements the Streamable HTTP transport (protocol version 2025-11-25).
+A server that implements the Streamable HTTP transport (protocol version 2025-03-26).
 
 - Basic server setup with Express and the Streamable HTTP transport
 - Session management with an in-memory event store for resumability
@@ -155,7 +155,7 @@ npx tsx src/examples/client/elicitationUrlExample.ts
 
 #### Deprecated SSE Transport
 
-A server that implements the deprecated HTTP+SSE transport (protocol version 2024-11-05). This example is only used for testing backwards compatibility for clients.
+A server that implements the deprecated HTTP+SSE transport (protocol version 2024-11-05). This example only used for testing backwards compatibility for clients.
 
 - Two separate endpoints: `/mcp` for the SSE stream (GET) and `/messages` for client messages (POST)
 - Tool implementation with a `start-notification-stream` tool that demonstrates sending periodic notifications
@@ -166,7 +166,7 @@ npx tsx src/examples/server/simpleSseServer.ts
 
 #### Streamable Http Backwards Compatible Server with SSE
 
-A server that supports both Streamable HTTP and SSE transports, adhering to the [MCP specification for backwards compatibility](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports#backwards-compatibility).
+A server that supports both Streamable HTTP and SSE transports, adhering to the [MCP specification for backwards compatibility](https://modelcontextprotocol.io/specification/2025-03-26/basic/transports#backwards-compatibility).
 
 - Single MCP server instance with multiple transport options
 - Support for Streamable HTTP requests at `/mcp` endpoint (GET/POST/DELETE)
@@ -337,7 +337,7 @@ To test the backwards compatibility features:
     # Legacy SSE server (protocol version 2024-11-05)
     npx tsx src/examples/server/simpleSseServer.ts
 
-    # Streamable HTTP server (protocol version 2025-11-25)
+    # Streamable HTTP server (protocol version 2025-03-26)
     npx tsx src/examples/server/simpleStreamableHttp.ts
 
     # Backwards compatible server (supports both protocols)

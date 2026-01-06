@@ -815,6 +815,50 @@ describe.each(zodTestMatrix)('$zodVersionLabel', (entry: ZodMatrixEntry) => {
         });
 
         /***
+         * Test: Tool Registration with securitySchemes
+         */
+        test('should register tool with securitySchemes and include it in list response', async () => {
+            const mcpServer = new McpServer({
+                name: 'test server',
+                version: '1.0'
+            });
+            const client = new Client({
+                name: 'test client',
+                version: '1.0'
+            });
+
+            mcpServer.registerTool(
+                'secure-tool',
+                {
+                    description: 'A tool with security schemes',
+                    securitySchemes: [
+                        { type: 'oauth2', scopes: ['read', 'write'] },
+                        { type: 'noauth' }
+                    ]
+                },
+                async () => ({
+                    content: [{ type: 'text', text: 'Secure response' }]
+                })
+            );
+
+            const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+
+            await Promise.all([client.connect(clientTransport), mcpServer.server.connect(serverTransport)]);
+
+            const result = await client.request(
+                { method: 'tools/list' },
+                ListToolsResultSchema
+            );
+
+            expect(result.tools).toHaveLength(1);
+            expect(result.tools[0].name).toBe('secure-tool');
+            expect(result.tools[0].securitySchemes).toEqual([
+                { type: 'oauth2', scopes: ['read', 'write'] },
+                { type: 'noauth' }
+            ]);
+        });
+
+        /***
          * Test: Tool Registration with Parameters and Annotations
          */
         test('should register tool with params and annotations', async () => {
@@ -2009,7 +2053,7 @@ describe.each(zodTestMatrix)('$zodVersionLabel', (entry: ZodMatrixEntry) => {
             });
 
             // Spy on console.warn to verify warnings are logged
-            const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+            const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => { });
 
             // Test valid tool names
             testServer.registerTool(

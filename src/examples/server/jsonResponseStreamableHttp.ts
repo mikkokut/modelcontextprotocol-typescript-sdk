@@ -21,13 +21,11 @@ const getServer = () => {
     );
 
     // Register a simple tool that returns a greeting
-    server.registerTool(
+    server.tool(
         'greet',
+        'A simple greeting tool',
         {
-            description: 'A simple greeting tool',
-            inputSchema: {
-                name: z.string().describe('Name to greet')
-            }
+            name: z.string().describe('Name to greet')
         },
         async ({ name }): Promise<CallToolResult> => {
             return {
@@ -42,13 +40,11 @@ const getServer = () => {
     );
 
     // Register a tool that sends multiple greetings with notifications
-    server.registerTool(
+    server.tool(
         'multi-greet',
+        'A tool that sends different greetings with delays between them',
         {
-            description: 'A tool that sends different greetings with delays between them',
-            inputSchema: {
-                name: z.string().describe('Name to greet')
-            }
+            name: z.string().describe('Name to greet')
         },
         async ({ name }, extra): Promise<CallToolResult> => {
             const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));

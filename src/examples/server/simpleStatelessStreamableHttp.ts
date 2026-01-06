@@ -16,13 +16,11 @@ const getServer = () => {
     );
 
     // Register a simple prompt
-    server.registerPrompt(
+    server.prompt(
         'greeting-template',
+        'A simple greeting prompt template',
         {
-            description: 'A simple greeting prompt template',
-            argsSchema: {
-                name: z.string().describe('Name to include in greeting')
-            }
+            name: z.string().describe('Name to include in greeting')
         },
         async ({ name }): Promise<GetPromptResult> => {
             return {
@@ -40,14 +38,12 @@ const getServer = () => {
     );
 
     // Register a tool specifically for testing resumability
-    server.registerTool(
+    server.tool(
         'start-notification-stream',
+        'Starts sending periodic notifications for testing resumability',
         {
-            description: 'Starts sending periodic notifications for testing resumability',
-            inputSchema: {
-                interval: z.number().describe('Interval in milliseconds between notifications').default(100),
-                count: z.number().describe('Number of notifications to send (0 for 100)').default(10)
-            }
+            interval: z.number().describe('Interval in milliseconds between notifications').default(100),
+            count: z.number().describe('Number of notifications to send (0 for 100)').default(10)
         },
         async ({ interval, count }, extra): Promise<CallToolResult> => {
             const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -82,7 +78,7 @@ const getServer = () => {
     );
 
     // Create a simple resource at a fixed URI
-    server.registerResource(
+    server.resource(
         'greeting-resource',
         'https://example.com/greetings/default',
         { mimeType: 'text/plain' },

@@ -11,7 +11,7 @@ import { createMcpExpressApp } from '../../server/express.js';
 /**
  * This example server demonstrates backwards compatibility with both:
  * 1. The deprecated HTTP+SSE transport (protocol version 2024-11-05)
- * 2. The Streamable HTTP transport (protocol version 2025-11-25)
+ * 2. The Streamable HTTP transport (protocol version 2025-03-26)
  *
  * It maintains a single MCP server instance but exposes two transport options:
  * - /mcp: The new Streamable HTTP endpoint (supports GET/POST/DELETE)
@@ -29,14 +29,12 @@ const getServer = () => {
     );
 
     // Register a simple tool that sends notifications over time
-    server.registerTool(
+    server.tool(
         'start-notification-stream',
+        'Starts sending periodic notifications for testing resumability',
         {
-            description: 'Starts sending periodic notifications for testing resumability',
-            inputSchema: {
-                interval: z.number().describe('Interval in milliseconds between notifications').default(100),
-                count: z.number().describe('Number of notifications to send (0 for 100)').default(50)
-            }
+            interval: z.number().describe('Interval in milliseconds between notifications').default(100),
+            count: z.number().describe('Number of notifications to send (0 for 100)').default(50)
         },
         async ({ interval, count }, extra): Promise<CallToolResult> => {
             const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -79,7 +77,7 @@ const app = createMcpExpressApp();
 const transports: Record<string, StreamableHTTPServerTransport | SSEServerTransport> = {};
 
 //=============================================================================
-// STREAMABLE HTTP TRANSPORT (PROTOCOL VERSION 2025-11-25)
+// STREAMABLE HTTP TRANSPORT (PROTOCOL VERSION 2025-03-26)
 //=============================================================================
 
 // Handle all MCP Streamable HTTP requests (GET, POST, DELETE) on a single endpoint
@@ -216,10 +214,10 @@ app.listen(PORT, error => {
 ==============================================
 SUPPORTED TRANSPORT OPTIONS:
 
-1. Streamable Http(Protocol version: 2025-11-25)
+1. Streamable Http(Protocol version: 2025-03-26)
    Endpoint: /mcp
    Methods: GET, POST, DELETE
-   Usage:
+   Usage: 
      - Initialize with POST to /mcp
      - Establish SSE stream with GET to /mcp
      - Send requests with POST to /mcp

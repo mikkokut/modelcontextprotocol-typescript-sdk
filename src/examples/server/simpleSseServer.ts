@@ -25,14 +25,12 @@ const getServer = () => {
         { capabilities: { logging: {} } }
     );
 
-    server.registerTool(
+    server.tool(
         'start-notification-stream',
+        'Starts sending periodic notifications',
         {
-            description: 'Starts sending periodic notifications',
-            inputSchema: {
-                interval: z.number().describe('Interval in milliseconds between notifications').default(1000),
-                count: z.number().describe('Number of notifications to send').default(10)
-            }
+            interval: z.number().describe('Interval in milliseconds between notifications').default(1000),
+            count: z.number().describe('Number of notifications to send').default(10)
         },
         async ({ interval, count }, extra): Promise<CallToolResult> => {
             const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));

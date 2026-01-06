@@ -34,8 +34,7 @@ import {
     ListToolsRequestSchema,
     CallToolRequestSchema,
     GetTaskRequestSchema,
-    GetTaskPayloadRequestSchema,
-    GetTaskPayloadResult
+    GetTaskPayloadRequestSchema
 } from '../../types.js';
 import { TaskMessageQueue, QueuedMessage, QueuedRequest, isTerminal, CreateTaskOptions } from '../../experimental/tasks/interfaces.js';
 import { InMemoryTaskStore } from '../../experimental/tasks/stores/in-memory.js';
@@ -619,7 +618,7 @@ const createServer = (): Server => {
     });
 
     // Handle tasks/result
-    server.setRequestHandler(GetTaskPayloadRequestSchema, async (request, extra): Promise<GetTaskPayloadResult> => {
+    server.setRequestHandler(GetTaskPayloadRequestSchema, async (request, extra): Promise<Result> => {
         const { taskId } = request.params;
         console.log(`[Server] tasks/result called for task ${taskId}`);
         return taskResultHandler.handle(taskId, server, extra.sessionId ?? '');

@@ -178,7 +178,7 @@ describe('Types', () => {
                 annotations: {
                     audience: ['user'],
                     priority: 0.5,
-                    lastModified: mockDate
+                    lastModified: new Date().toISOString()
                 }
             };
 
